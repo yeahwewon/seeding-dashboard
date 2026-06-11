@@ -3,265 +3,295 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>인플루언서 시딩 대시보드 | Sungboon Editor</title>
+<title>인플루언서 시딩 대시보드</title>
 <style>
+  :root{--bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#242424;--border:#2e2e2e;--text:#e8e8e6;--text2:#888;--text3:#555;--purple:#7c6ff7;--purple2:#a89ff9;--green:#3ecf8e;--amber:#f5a623;--red:#f06a6a;--blue:#5ba4cf}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f5f5f3;color:#1a1a1a;font-size:14px}
-  .top-bar{background:#fff;border-bottom:1px solid #e8e8e6;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
-  .top-bar-title{font-size:16px;font-weight:600;color:#1a1a1a}
-  .top-bar-sub{font-size:12px;color:#888;margin-top:2px}
-  .sync-btn{font-size:12px;padding:6px 14px;border-radius:6px;border:1px solid #e8e8e6;background:#fff;cursor:pointer;display:flex;align-items:center;gap:5px;color:#444}
-  .sync-btn:hover{background:#f5f5f3}
-  .container{max-width:1100px;margin:0 auto;padding:24px 20px}
-  .country-tabs{display:flex;gap:0;border-bottom:1px solid #e8e8e6;margin-bottom:24px}
-  .ctab{font-size:13px;font-weight:500;padding:10px 22px;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px}
-  .ctab.active{color:#534AB7;border-bottom:2px solid #534AB7}
-  .cpane{display:none}
-  .cpane.active{display:block}
-  .loading{text-align:center;padding:4rem;font-size:13px;color:#888}
-  .spinner{display:inline-block;width:16px;height:16px;border:2px solid #e8e8e6;border-top-color:#534AB7;border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;font-size:13px;min-height:100vh}
+  /* TOP BAR */
+  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .topbar-left{display:flex;align-items:center;gap:16px}
+  .topbar-logo{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+  .topbar-sub{font-size:12px;color:var(--text2)}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+  .sync-btn{font-size:12px;padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+  .sync-btn:hover{border-color:var(--purple);color:var(--purple)}
+  .sync-status{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+  .dot.loading{background:var(--amber);animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  /* CONTAINER */
+  .container{max-width:1200px;margin:0 auto;padding:24px 20px}
+  /* TABS */
+  .tabs{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--border)}
+  .tab{font-size:13px;font-weight:500;padding:10px 20px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;border-radius:4px 4px 0 0}
+  .tab:hover{color:var(--text);background:var(--bg3)}
+  .tab.active{color:var(--purple2);border-bottom:2px solid var(--purple)}
+  .pane{display:none}
+  .pane.active{display:block}
+  /* LOADING */
+  .loading-state{text-align:center;padding:5rem;color:var(--text3)}
+  .spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .error-box{background:#fff;border:1px solid #e8e8e6;border-radius:10px;padding:20px;font-size:13px;color:#666;line-height:2}
-  .error-box b{color:#1a1a1a}
-  .section-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;margin-top:28px}
+  /* SECTION */
+  .section-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;margin-top:28px}
   .section-label:first-child{margin-top:0}
-  .divider{height:1px;background:#e8e8e6;margin:28px 0}
-
-  /* 첫번째 테이블 - 요약 */
-  .summary-wrap{overflow-x:auto;border:1px solid #e8e8e6;border-radius:10px;margin-bottom:8px;background:#fff}
-  .summary-wrap table{width:100%;border-collapse:collapse;font-size:13px}
-  .summary-wrap thead th{padding:10px 16px;color:#888;font-weight:500;border-bottom:1px solid #e8e8e6;white-space:nowrap;background:#fafaf9;text-align:center}
-  .summary-wrap thead th:first-child{text-align:left}
-  .summary-wrap tbody td{padding:9px 16px;border-bottom:1px solid #f0f0ee;color:#1a1a1a;white-space:nowrap;text-align:center}
-  .summary-wrap tbody td:first-child{text-align:left;font-weight:500}
-  .summary-wrap tbody tr:last-child td{border-bottom:none;background:#fafaf9;font-weight:600}
-  .summary-wrap tbody tr:hover td{background:#fafaf9}
-  .num-empty{color:#ccc}
-
-  /* 두번째 테이블 - 파이프라인 */
-  .pipe-wrap{overflow-x:auto;border:1px solid #e8e8e6;border-radius:10px;background:#fff}
-  .pipe-wrap table{width:100%;border-collapse:collapse;font-size:12px}
-  .pipe-wrap thead th{padding:9px 12px;color:#888;font-weight:500;border-bottom:1px solid #e8e8e6;white-space:nowrap;background:#fafaf9;text-align:center}
-  .pipe-wrap thead th.left{text-align:left}
-  .pipe-wrap tbody td{padding:8px 12px;border-bottom:1px solid #f0f0ee;text-align:center;color:#1a1a1a}
-  .pipe-wrap tbody td.month-cell{text-align:left;font-weight:600;color:#1a1a1a;background:#fafaf9;border-right:1px solid #e8e8e6;width:70px}
-  .pipe-wrap tbody td.week-cell{text-align:left;color:#888;width:40px}
+  .divider{height:1px;background:var(--border);margin:28px 0}
+  /* SUMMARY TABLE */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin-bottom:4px}
+  .tbl-wrap table{width:100%;border-collapse:collapse}
+  .tbl-wrap thead th{padding:10px 16px;color:var(--text2);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg2);text-align:center;font-size:12px}
+  .tbl-wrap thead th:first-child{text-align:left}
+  .tbl-wrap tbody td{padding:9px 16px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;text-align:center;font-size:12px}
+  .tbl-wrap tbody td:first-child{text-align:left;color:var(--text2)}
+  .tbl-wrap tbody tr:last-child td{border-bottom:none;background:var(--bg2);font-weight:600;color:var(--text)}
+  .tbl-wrap tbody tr:hover td{background:var(--bg3)}
+  .val-empty{color:var(--text3) !important}
+  /* PIPELINE TABLE */
+  .pipe-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+  .pipe-wrap table{width:100%;border-collapse:collapse}
+  .pipe-wrap thead th{padding:10px 14px;color:var(--text2);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg2);text-align:center;font-size:11px;letter-spacing:.02em}
+  .pipe-wrap thead th.l{text-align:left}
+  .pipe-wrap tbody td{padding:8px 14px;border-bottom:1px solid var(--border);text-align:center;font-size:12px;color:var(--text)}
+  .pipe-wrap tbody td.month-cell{text-align:left;font-weight:600;color:var(--text);background:var(--bg2);border-right:1px solid var(--border);width:68px;font-size:11px}
+  .pipe-wrap tbody td.week-cell{text-align:left;color:var(--text2);width:36px;font-size:11px}
+  .pipe-wrap tbody tr.new-month td{border-top:1px solid var(--border)}
   .pipe-wrap tbody tr:last-child td{border-bottom:none}
-  .pipe-wrap tbody tr:hover td{background:#fafaf9}
-  .pipe-wrap tbody tr.new-month td{border-top:1px solid #e0e0de}
-  .pct-green{color:#0F6E56;font-weight:600}
-  .pct-amber{color:#854F0B;font-weight:600}
-  .pct-gray{color:#bbb}
-  .val-zero{color:#ddd}
-
-  /* 미니바 */
+  .pipe-wrap tbody tr:hover td{background:var(--bg3)}
+  /* PCT */
+  .pct-green{color:var(--green);font-weight:600}
+  .pct-amber{color:var(--amber);font-weight:600}
+  .pct-gray{color:var(--text3)}
+  .val-zero{color:var(--text3)}
+  /* CELL */
   .cell-inner{display:flex;flex-direction:column;align-items:center;gap:3px}
-  .mini-bar{width:36px;height:3px;background:#eee;border-radius:2px;overflow:hidden}
-  .mini-bar-fill{height:100%;border-radius:2px}
+  .mini-bar{width:32px;height:2px;background:var(--bg3);border-radius:2px;overflow:hidden}
+  .mini-bar-fill{height:100%;border-radius:2px;transition:width .3s}
+  /* ERROR */
+  .error-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;color:var(--text2);line-height:2}
+  .error-box b{color:var(--text)}
 </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <div>
-    <div class="top-bar-title">인플루언서 시딩 대시보드</div>
-    <div class="top-bar-sub">성분에디터 · Sungboon Editor &nbsp;|&nbsp; 2025–2026</div>
+<div class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="topbar-logo">인플루언서 시딩 대시보드</div>
+      <div class="topbar-sub">성분에디터 · Sungboon Editor &nbsp;|&nbsp; FY 2025–2026</div>
+    </div>
   </div>
-  <button class="sync-btn" onclick="loadAll()">↻ SYNC</button>
+  <div class="topbar-right">
+    <div class="sync-status"><span class="dot" id="dot"></span><span id="sync-txt">연결 중...</span></div>
+    <button class="sync-btn" onclick="loadAll()">↻ SYNC</button>
+  </div>
 </div>
 
 <div class="container">
-  <div class="country-tabs">
-    <div class="ctab active" onclick="showCountry('au')">🇦🇺 호주</div>
-    <div class="ctab" onclick="showCountry('id')">🇮🇩 인도네시아</div>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('au')">🇦🇺 호주</div>
+    <div class="tab" onclick="showTab('id')">🇮🇩 인도네시아</div>
   </div>
-  <div id="pane-au" class="cpane active">
-    <div id="au-content"><div class="loading"><span class="spinner"></span>불러오는 중...</div></div>
+  <div id="pane-au" class="pane active">
+    <div id="au-content"><div class="loading-state"><span class="spinner"></span>불러오는 중...</div></div>
   </div>
-  <div id="pane-id" class="cpane">
-    <div id="id-content"><div class="loading"><span class="spinner"></span>불러오는 중...</div></div>
+  <div id="pane-id" class="pane">
+    <div id="id-content"><div class="loading-state"><span class="spinner"></span>불러오는 중...</div></div>
   </div>
 </div>
 
 <script>
-const URLS = {
-  au: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhVfiw_TTXB0APbhaC-iJJGO76ovqb8hYSzT2O7aHnab8PnBpwZUKwhY0r5HGKIA/pub?gid=413156464&single=true&output=csv',
-  id: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSe1JZ06WjgHm-PGm6RSSvKcHY2TP05B33hkB-Q7m8Z2eoVfoEWAyiYddj5DLifOOmZxdpwYNH4569P/pub?gid=972980346&single=true&output=csv'
+const URLS={
+  au:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhVfiw_TTXB0APbhaC-iJJGO76ovqb8hYSzT2O7aHnab8PnBpwZUKwhY0r5HGKIA/pub?gid=413156464&single=true&output=csv',
+  id:'https://docs.google.com/spreadsheets/d/e/2PACX-1vSe1JZ06WjgHm-PGm6RSSvKcHY2TP05B33hkB-Q7m8Z2eoVfoEWAyiYddj5DLifOOmZxdpwYNH4569P/pub?gid=972980346&single=true&output=csv'
 };
 
-function showCountry(c) {
-  document.querySelectorAll('.ctab').forEach((t,i) => t.classList.toggle('active', ['au','id'][i] === c));
-  document.querySelectorAll('.cpane').forEach(p => p.classList.remove('active'));
-  document.getElementById('pane-' + c).classList.add('active');
+function showTab(c){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['au','id'][i]===c));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pane-'+c).classList.add('active');
 }
 
-function parseCSV(text) {
-  return text.trim().split('\n').map(line => {
-    const cells = []; let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      if (line[i] === '"') { inQ = !inQ; }
-      else if (line[i] === ',' && !inQ) { cells.push(cur.trim()); cur = ''; }
-      else cur += line[i];
+function parseCSV(text){
+  return text.trim().split('\n').map(line=>{
+    const cells=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      if(line[i]==='"'){inQ=!inQ;}
+      else if(line[i]===','&&!inQ){cells.push(cur.trim());cur='';}
+      else cur+=line[i];
     }
     cells.push(cur.trim());
     return cells;
   });
 }
 
-function isEmpty(r) { return !r || r.every(c => !c || c.trim() === ''); }
+function isEmpty(r){return!r||r.every(c=>!c||c.trim()==='');}
 
-function splitTables(rows) {
-  const tables = []; let cur = [];
-  for (const r of rows) {
-    if (isEmpty(r)) { if (cur.length) { tables.push(cur); cur = []; } }
+function splitTables(rows){
+  const tables=[];let cur=[];
+  for(const r of rows){
+    if(isEmpty(r)){if(cur.length){tables.push(cur);cur=[];}}
     else cur.push(r);
   }
-  if (cur.length) tables.push(cur);
+  if(cur.length)tables.push(cur);
   return tables;
 }
 
-function fmtPct(s) {
-  if (!s || s.trim() === '') return { txt: '–', cls: 'pct-gray' };
-  const n = parseFloat(s);
-  if (isNaN(n)) return { txt: '–', cls: 'pct-gray' };
-  return { txt: Math.round(n) + '%', cls: n >= 70 ? 'pct-green' : n >= 30 ? 'pct-amber' : 'pct-gray' };
+function fmtPct(s){
+  if(!s||s.trim()==='')return{txt:'–',cls:'pct-gray'};
+  const n=parseFloat(s);
+  if(isNaN(n))return{txt:'–',cls:'pct-gray'};
+  return{txt:Math.round(n)+'%',cls:n>=70?'pct-green':n>=30?'pct-amber':'pct-gray'};
 }
 
-function fmtNum(s) {
-  if (!s || s.trim() === '') return { txt: '–', zero: true };
-  const n = parseFloat(String(s).replace(/[^0-9.]/g, ''));
-  if (isNaN(n)) return { txt: s, zero: false };
-  return { txt: String(Math.round(n)), zero: n === 0 };
+function fmtNum(s){
+  if(!s||s.trim()==='')return{txt:'–',zero:true};
+  const n=parseFloat(String(s).replace(/[^0-9.]/g,''));
+  if(isNaN(n))return{txt:s,zero:false};
+  return{txt:String(Math.round(n)),zero:n===0};
 }
 
-function renderSummaryTable(rows) {
-  const head = rows[0];
-  const body = rows.slice(1).filter(r => !isEmpty(r));
-  let h = `<div class="summary-wrap"><table><thead><tr>`;
-  head.forEach(c => h += `<th>${c || ''}</th>`);
-  h += `</tr></thead><tbody>`;
-  body.forEach(r => {
-    h += `<tr>`;
-    r.forEach((c, i) => {
-      const isEmpty = !c || c.trim() === '' || c.trim() === '0';
-      h += `<td class="${i > 0 && isEmpty ? 'num-empty' : ''}">${c || '–'}</td>`;
+function renderSummary(rows){
+  const head=rows[0];
+  const body=rows.slice(1).filter(r=>!isEmpty(r));
+  let h=`<div class="tbl-wrap"><table><thead><tr>`;
+  head.forEach(c=>h+=`<th>${c||''}</th>`);
+  h+=`</tr></thead><tbody>`;
+  body.forEach(r=>{
+    h+=`<tr>`;
+    r.forEach((c,i)=>{
+      const empty=!c||c.trim()===''||c.trim()==='0';
+      h+=`<td class="${i>0&&empty?'val-empty':''}">${c||'–'}</td>`;
     });
-    h += `</tr>`;
+    h+=`</tr>`;
   });
-  return h + `</tbody></table></div>`;
+  return h+`</tbody></table></div>`;
 }
 
-function renderWeeklyTable(rows) {
-  const head = rows[0].map(h => (h || '').trim());
-  const ci = {
-    month:     head.findIndex(h => /^month$/i.test(h)),
-    week:      head.findIndex(h => /^week$/i.test(h)),
-    listing:   head.findIndex(h => /listing/i.test(h)),
-    contact:   head.findIndex(h => /^contact$/i.test(h)),
-    response:  head.findIndex(h => /^responses?$/i.test(h)),
-    pending:   head.findIndex(h => /pending/i.test(h)),
-    delivered: head.findIndex(h => /deliver/i.test(h)),
-    upload:    head.findIndex(h => /upload/i.test(h)),
-    respRate:  head.findIndex(h => /response\s*rate/i.test(h)),
-    accRate:   head.findIndex(h => /accept/i.test(h)),
+function renderPipeline(rows){
+  const head=rows[0].map(h=>(h||'').trim());
+  const find=(aliases)=>head.findIndex(h=>aliases.some(a=>h.toLowerCase().includes(a.toLowerCase())));
+
+  const ci={
+    month:     find(['month']),
+    week:      find(['week']),
+    listing:   find(['listing']),
+    contact:   find(['contact']),
+    response:  find(['response']),
+    pending:   find(['pending']),
+    delivered: find(['deliver']),
+    upload:    find(['upload']),
+    respRate:  find(['response rate']),
+    accRate:   find(['accept','acceptance']),
   };
+  // response rate 보다 response가 먼저 잡힐 수 있어서 분리
+  ci.response=head.findIndex(h=>/^responses?$/i.test(h.trim()));
 
-  const COLS = [
-    { key: 'listing',   label: '리스팅',   color: '#AFA9EC' },
-    { key: 'contact',   label: '컨택',     color: '#534AB7' },
-    { key: 'response',  label: '배송 대기',color: '#FAC775' },
-    { key: 'pending',   label: 'Pending',  color: '#FAC775' },
-    { key: 'delivered', label: '배송완료', color: '#5DCAA5' },
-    { key: 'upload',    label: '업로드',   color: '#378ADD' },
-    { key: 'respRate',  label: '응답률',   isPct: true },
-    { key: 'accRate',   label: '수락률',   isPct: true },
-  ].filter(c => ci[c.key] > -1);
+  const COLS=[
+    {key:'listing',  label:'리스팅',   color:'#a89ff9'},
+    {key:'contact',  label:'컨택',     color:'#7c6ff7'},
+    {key:'response', label:'배송 대기',color:'#f5a623'},
+    {key:'pending',  label:'Pending',  color:'#f5a623'},
+    {key:'delivered',label:'배송완료', color:'#3ecf8e'},
+    {key:'upload',   label:'업로드',   color:'#5ba4cf'},
+    {key:'respRate', label:'응답률',   isPct:true},
+    {key:'accRate',  label:'수락률',   isPct:true},
+  ].filter(c=>ci[c.key]>-1);
 
-  const body = rows.slice(1).filter(r => !isEmpty(r));
-  let h = `<div class="pipe-wrap"><table><thead><tr>`;
-  h += `<th class="left">Month</th><th class="left">Week</th>`;
-  COLS.forEach(c => h += `<th>${c.label}</th>`);
-  h += `</tr></thead><tbody>`;
+  const body=rows.slice(1).filter(r=>!isEmpty(r));
+  let h=`<div class="pipe-wrap"><table><thead><tr>`;
+  h+=`<th class="l">Month</th><th class="l">Week</th>`;
+  COLS.forEach(c=>h+=`<th>${c.label}</th>`);
+  h+=`</tr></thead><tbody>`;
 
-  let prevMonth = '';
-  let listingIdx = ci['listing'];
+  let prevMonth='';
+  const listIdx=ci.listing;
 
-  body.forEach(r => {
-    const month = (ci.month > -1 ? r[ci.month] || '' : '').trim();
-    const week  = (ci.week  > -1 ? r[ci.week]  || '' : '').trim();
-    const isNew = month && month !== prevMonth;
-    if (isNew) prevMonth = month;
-    const listN = listingIdx > -1 ? parseFloat(String(r[listingIdx] || '0').replace(/[^0-9.]/g,'')) || 0 : 0;
+  body.forEach(r=>{
+    const month=(ci.month>-1?r[ci.month]||'':'').trim();
+    const week=(ci.week>-1?r[ci.week]||'':'').trim();
+    const isNew=month&&month!==prevMonth;
+    if(isNew)prevMonth=month;
+    const listN=listIdx>-1?parseFloat(String(r[listIdx]||'0').replace(/[^0-9.]/g,''))||0:0;
 
-    h += `<tr class="${isNew ? 'new-month' : ''}">`;
-    h += `<td class="month-cell">${isNew ? month : ''}</td>`;
-    h += `<td class="week-cell">${week}</td>`;
-    COLS.forEach(c => {
-      const raw = r[ci[c.key]] || '';
-      if (c.isPct) {
-        const p = fmtPct(raw);
-        h += `<td class="${p.cls}">${p.txt}</td>`;
+    h+=`<tr class="${isNew?'new-month':''}">`;
+    h+=`<td class="month-cell">${isNew?month:''}</td>`;
+    h+=`<td class="week-cell">${week}</td>`;
+    COLS.forEach(c=>{
+      const raw=r[ci[c.key]]||'';
+      if(c.isPct){
+        const p=fmtPct(raw);
+        h+=`<td class="${p.cls}">${p.txt}</td>`;
       } else {
-        const n = fmtNum(raw);
-        const barPct = listN > 0 ? Math.min(Math.round((parseFloat(n.txt) || 0) / listN * 100), 100) : 0;
-        h += `<td class="${n.zero ? 'val-zero' : ''}">`;
-        h += `<div class="cell-inner"><span>${n.txt}</span>`;
-        if (listN > 0 && !n.zero) h += `<div class="mini-bar"><div class="mini-bar-fill" style="width:${barPct}%;background:${c.color}"></div></div>`;
-        h += `</div></td>`;
+        const n=fmtNum(raw);
+        const barPct=listN>0?Math.min(Math.round((parseFloat(n.txt)||0)/listN*100),100):0;
+        h+=`<td class="${n.zero?'val-zero':''}"><div class="cell-inner"><span>${n.txt}</span>`;
+        if(listN>0&&!n.zero)h+=`<div class="mini-bar"><div class="mini-bar-fill" style="width:${barPct}%;background:${c.color}"></div></div>`;
+        h+=`</div></td>`;
       }
     });
-    h += `</tr>`;
+    h+=`</tr>`;
   });
-  return h + `</tbody></table></div>`;
+  return h+`</tbody></table></div>`;
 }
 
-async function loadCountry(key) {
-  const el = document.getElementById(key + '-content');
-  let text = null;
+function setSyncStatus(ok){
+  const dot=document.getElementById('dot');
+  const txt=document.getElementById('sync-txt');
+  if(ok){dot.className='dot';txt.textContent='연결됨';}
+  else{dot.className='dot loading';txt.textContent='연결 중...';}
+}
 
-  const proxies = [
-    u => u,
-    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-    u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+async function loadCountry(key){
+  const el=document.getElementById(key+'-content');
+  let text=null;
+
+  const proxies=[
+    u=>u,
+    u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
   ];
 
-  for (const p of proxies) {
-    try {
-      const res = await fetch(p(URLS[key]), { cache: 'no-store' });
-      if (res.ok) {
-        const t = await res.text();
-        if (t && t.length > 20 && !t.trim().startsWith('<!')) { text = t; break; }
+  for(const p of proxies){
+    try{
+      const res=await fetch(p(URLS[key]),{cache:'no-store'});
+      if(res.ok){
+        const t=await res.text();
+        if(t&&t.length>20&&!t.trim().startsWith('<')){text=t;break;}
       }
-    } catch(e) {}
+    }catch(e){}
   }
 
-  if (!text) {
-    el.innerHTML = `<div class="error-box"><b>시트를 불러오지 못했어요</b><br>구글 시트 → 파일 → <b>웹에 게시</b> → <b>게시</b> 버튼 클릭 후 SYNC 눌러주세요.</div>`;
+  if(!text){
+    el.innerHTML=`<div class="error-box"><b>시트를 불러오지 못했어요</b><br>구글 시트 → 파일 → <b>웹에 게시</b> → <b>게시</b> 버튼 클릭 후 SYNC 눌러주세요.</div>`;
+    setSyncStatus(false);
     return;
   }
 
-  const rows = parseCSV(text);
-  const tables = splitTables(rows);
-  let html = '';
+  setSyncStatus(true);
+  const rows=parseCSV(text);
+  const tables=splitTables(rows);
+  let html='';
 
-  if (tables.length === 0) {
-    html = `<div class="error-box">데이터가 비어있어요.</div>`;
-  } else if (tables.length === 1) {
-    html += `<div class="section-label">시딩 현황</div>`;
-    html += renderWeeklyTable(tables[0]);
+  if(tables.length===0){
+    html=`<div class="error-box">데이터가 비어있어요.</div>`;
+  } else if(tables.length===1){
+    html+=`<div class="section-label">시딩 현황</div>`;
+    html+=renderPipeline(tables[0]);
   } else {
-    html += `<div class="section-label">${key === 'au' ? '호주 거래처별 시딩 수량' : '인도네시아 캠페인별 시딩 수량'}</div>`;
-    html += renderSummaryTable(tables[0]);
-    html += `<div class="divider"></div>`;
-    html += `<div class="section-label">${key === 'au' ? 'AU Australia Unpaid Seeding Status 2026' : 'ID Indonesia Unpaid Seeding Status 2026'}</div>`;
-    html += renderWeeklyTable(tables[1]);
+    html+=`<div class="section-label">${key==='au'?'호주 거래처별 시딩 수량':'인도네시아 캠페인별 시딩 수량'}</div>`;
+    html+=renderSummary(tables[0]);
+    html+=`<div class="divider"></div>`;
+    html+=`<div class="section-label">${key==='au'?'AU Australia Unpaid Seeding Status 2026':'ID Indonesia Unpaid Seeding Status 2026'}</div>`;
+    html+=renderPipeline(tables[1]);
   }
-  el.innerHTML = html;
+  el.innerHTML=html;
 }
 
-function loadAll() {
-  ['au', 'id'].forEach(k => {
-    document.getElementById(k + '-content').innerHTML = `<div class="loading"><span class="spinner"></span>불러오는 중...</div>`;
+function loadAll(){
+  setSyncStatus(false);
+  ['au','id'].forEach(k=>{
+    document.getElementById(k+'-content').innerHTML=`<div class="loading-state"><span class="spinner"></span>불러오는 중...</div>`;
     loadCountry(k);
   });
 }

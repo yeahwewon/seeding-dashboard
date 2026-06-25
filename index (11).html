@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인플루언서 시딩 대시보드</title>
+<style>
+  :root {
+    --bg:#f8f8f7;--bg2:#ffffff;--bg3:#f3f3f1;--bg4:#eaeae8;
+    --border:#e5e5e2;--border2:#d4d4d0;
+    --text:#1a1a1a;--text2:#6b6b6b;--text3:#aaaaaa;
+    --accent:#6c63ff;--accent2:#4f46e5;
+    --green:#059669;--green2:#d1fae5;
+    --amber:#d97706;--amber2:#fef3c7;
+    --blue:#2563eb;--purple:#7c3aed;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;font-size:15px;line-height:1.6}
+  .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 36px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .topbar-brand{display:flex;align-items:center;gap:12px}
+  .topbar-dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+  .topbar-title{font-size:16px;font-weight:700;color:var(--text)}
+  .topbar-sub{font-size:13px;color:var(--text3);margin-left:8px}
+  .topbar-right{display:flex;align-items:center;gap:14px}
+  .status-pill{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 14px}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+  .status-dot.off{background:var(--amber);animation:blink 1.2s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .sync-btn{font-size:13px;padding:8px 20px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-weight:500;transition:all .2s}
+  .sync-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+  .container{max-width:1400px;margin:0 auto;padding:32px 28px}
+  .country-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;margin-top:8px}
+  .country-header:not(:first-child){margin-top:52px}
+  .country-label{font-size:20px;font-weight:700;color:var(--text)}
+  .country-divider{flex:1;height:2px;background:var(--border)}
+  .loading-state{text-align:center;padding:6rem;color:var(--text3);font-size:15px}
+  .spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .section-title{font-size:13px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;margin-top:36px;display:flex;align-items:center;gap:10px}
+  .section-title:first-child{margin-top:0}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+  .divider{height:1px;background:var(--border);margin:36px 0}
+
+  /* SUMMARY TABLE */
+  .tbl-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .tbl-scroll{overflow-x:auto}
+  .tbl-card table{width:100%;border-collapse:collapse}
+  .tbl-card thead th{padding:14px 22px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg3);text-align:center;font-size:14px}
+  .tbl-card thead th:first-child{text-align:left;min-width:260px}
+  .tbl-card tbody td{padding:13px 22px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;text-align:center;font-size:15px}
+  .tbl-card tbody td:first-child{text-align:left;color:var(--text2);font-size:14px}
+  .tbl-card tbody tr:last-child td{border-bottom:none}
+  .tbl-card tbody tr.total-row td{background:var(--bg3);font-weight:700;color:var(--text);border-top:2px solid var(--border2)}
+  .tbl-card tbody tr.total-row td:first-child{color:var(--accent2)}
+  .tbl-card tbody tr:hover td{background:var(--bg3)}
+  .val-empty{color:var(--text3)!important}
+  .val-num{color:var(--text);font-weight:600}
+
+  /* PIPELINE TABLE */
+  .pipe-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+  .pipe-scroll{overflow-x:auto}
+  .pipe-card table{width:100%;border-collapse:collapse}
+  .pipe-card thead th{padding:14px 22px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg3);text-align:center;font-size:14px}
+  .pipe-card thead th.l{text-align:left}
+  .pipe-card tbody td{padding:13px 22px;border-bottom:1px solid var(--border);text-align:center;font-size:15px;color:var(--text)}
+  .pipe-card tbody td.mc{text-align:center;vertical-align:middle;font-weight:700;font-size:14px;color:var(--accent2);background:var(--bg3);border-right:2px solid var(--border2);min-width:80px}
+  .pipe-card tbody td.wc{text-align:left;color:var(--text3);min-width:60px;font-size:14px;border-right:1px solid var(--border)}
+  .pipe-card tbody tr:last-child td{border-bottom:none}
+  .pipe-card tbody tr:hover td{background:var(--bg3)}
+  .pipe-card tbody tr:hover td.mc{background:var(--bg3)}
+  .pct-green{display:inline-block;background:var(--green2);color:var(--green);font-weight:700;font-size:14px;padding:3px 12px;border-radius:20px}
+  .pct-amber{display:inline-block;background:var(--amber2);color:var(--amber);font-weight:700;font-size:14px;padding:3px 12px;border-radius:20px}
+  .pct-gray{color:var(--text3);font-size:14px}
+  .val-zero{color:var(--text3)}
+  .cell-inner{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .mini-bar{width:44px;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+  .mini-bar-fill{height:100%;border-radius:2px}
+  .error-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;color:var(--text2);line-height:2;font-size:15px}
+  .error-box b{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-dot"></div>
+    <div>
+      <span class="topbar-title">인플루언서 시딩 대시보드</span>
+      <span class="topbar-sub">성분에디터 · FY 2025–2026</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="status-pill"><span class="status-dot off" id="dot"></span><span id="sync-txt">연결 중...</span></div>
+    <button class="sync-btn" onclick="loadAll()">↻ SYNC</button>
+  </div>
+</div>
+<div class="container">
+  <div class="country-header">
+    <span class="country-label">🇮🇩 인도네시아</span>
+    <div class="country-divider"></div>
+  </div>
+  <div id="id-content"><div class="loading-state"><span class="spinner"></span>불러오는 중...</div></div>
+  <div class="country-header">
+    <span class="country-label">🇦🇺 호주</span>
+    <div class="country-divider"></div>
+  </div>
+  <div id="au-content"><div class="loading-state"><span class="spinner"></span>불러오는 중...</div></div>
+</div>
+
+<script>
+const URLS={
+  au:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhVfiw_TTXB0APbhaC-iJJGO76ovqb8hYSzT2O7aHnab8PnBpwZUKwhY0r5HGKIA/pub?gid=413156464&single=true&output=csv',
+  id:'https://docs.google.com/spreadsheets/d/e/2PACX-1vSe1JZ06WjgHm-PGm6RSSvKcHY2TP05B33hkB-Q7m8Z2eoVfoEWAyiYddj5DLifOOmZxdpwYNH4569P/pub?gid=972980346&single=true&output=csv'
+};
+
+
+function parseCSV(text){
+  return text.trim().split('\n').map(line=>{
+    const cells=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      if(line[i]==='"'){inQ=!inQ;}
+      else if(line[i]===','&&!inQ){cells.push(cur.trim());cur='';}
+      else cur+=line[i];
+    }
+    cells.push(cur.trim());
+    return cells;
+  });
+}
+
+function isEmpty(r){return!r||r.every(c=>!c||c.trim()==='');}
+function findYearIdx(rows){return rows.findIndex(r=>r.some(c=>/(2025-2026|2025–2026)/i.test(c||'')));}
+function findPipeIdx(rows){return rows.findIndex(r=>r.some(c=>/^month$/i.test((c||'').trim())));}
+
+function renderSummary(rows){
+  const hIdx=findYearIdx(rows);
+  if(hIdx<0)return '';
+  const headerRow=rows[hIdx];
+  const startCol=headerRow.findIndex(c=>/(2025-2026|2025–2026)/i.test(c||''));
+  const head=[...headerRow.slice(startCol)];
+  if(!head[0]||head[0].trim()==='')head[0]='캠페인';
+  const pipeIdx=findPipeIdx(rows);
+  const endIdx=pipeIdx>hIdx?pipeIdx:rows.length;
+  const body=rows.slice(hIdx+1,endIdx).filter(r=>!isEmpty(r));
+  let h=`<div class="tbl-card"><div class="tbl-scroll"><table><thead><tr>`;
+  head.forEach(c=>h+=`<th>${c||''}</th>`);
+  h+=`</tr></thead><tbody>`;
+  body.forEach(r=>{
+    const sliced=r.slice(startCol);
+    const name=(sliced[0]||'').trim();
+    if(!name||/^\d+$/.test(name))return;
+    const isTotal=/(total|전체|합계)/i.test(name);
+    h+=`<tr class="${isTotal?'total-row':''}">`;
+    sliced.forEach((c,i)=>{
+      const empty=!c||c.trim()===''||c.trim()==='0';
+      const hasNum=!empty&&i>0&&!isNaN(parseFloat(c));
+      h+=`<td class="${i>0&&empty?'val-empty':''}${hasNum?' val-num':''}">${(!c||c.trim()==='')?'–':c}</td>`;
+    });
+    h+=`</tr>`;
+  });
+  return h+`</tbody></table></div></div>`;
+}
+
+function renderPipeline(rows){
+  const hIdx=findPipeIdx(rows);
+  if(hIdx<0)return '';
+  const monthCol=rows[hIdx].findIndex(c=>/^month$/i.test((c||'').trim()));
+  const weekCol=rows[hIdx].findIndex(c=>/^week$/i.test((c||'').trim()));
+  const hRow=rows[hIdx];
+  const findAbs=aliases=>hRow.findIndex(h=>aliases.some(a=>h.toLowerCase().replace(/\s/g,'')=== a.toLowerCase().replace(/\s/g,'')));
+  const findAbsIn=aliases=>hRow.findIndex(h=>aliases.some(a=>h.toLowerCase().includes(a.toLowerCase())));
+  const ci={
+    month:monthCol,week:weekCol,
+    listing:findAbs(['listing']),contact:findAbs(['contact']),
+    response:findAbs(['response']),pending:findAbsIn(['pending']),
+    delivered:findAbsIn(['deliver']),upload:findAbsIn(['upload']),
+    respRate:findAbsIn(['response rate']),accRate:findAbsIn(['acceptance','accept']),
+  };
+  if(ci.response===ci.respRate)ci.response=-1;
+  const COLS=[
+    {key:'listing',  label:'리스팅',   color:'#8b5cf6'},
+    {key:'contact',  label:'컨택',     color:'#6c63ff'},
+    {key:'response', label:'배송 대기',color:'#f59e0b'},
+    {key:'pending',  label:'Pending',  color:'#f59e0b'},
+    {key:'delivered',label:'배송완료', color:'#059669'},
+    {key:'upload',   label:'업로드',   color:'#2563eb'},
+    {key:'respRate', label:'응답률',   isPct:true},
+    {key:'accRate',  label:'수락률',   isPct:true},
+  ].filter(c=>ci[c.key]>-1);
+
+  const parsed=[];
+  let lastMonth='';
+  rows.slice(hIdx+1).forEach(r=>{
+    if(isEmpty(r))return;
+    const month=(r[monthCol]||'').trim();
+    const week=(r[weekCol]||'').trim();
+    if(!week&&!month)return;
+    if(month)lastMonth=month;
+    parsed.push({week,lastMonth,r});
+  });
+  const rowspans={};
+  parsed.forEach(({lastMonth})=>{rowspans[lastMonth]=(rowspans[lastMonth]||0)+1;});
+  const monthRendered={};
+
+  let h=`<div class="pipe-card"><div class="pipe-scroll"><table><thead><tr>`;
+  h+=`<th class="l" style="min-width:80px">Month</th><th class="l" style="min-width:60px">Week</th>`;
+  COLS.forEach(c=>h+=`<th>${c.label}</th>`);
+  h+=`</tr></thead><tbody>`;
+  parsed.forEach(({week,lastMonth,r})=>{
+    const isNew=!monthRendered[lastMonth];
+    if(isNew)monthRendered[lastMonth]=true;
+    const listN=ci.listing>-1?parseFloat(String(r[ci.listing]||'0').replace(/[^0-9.]/g,''))||0:0;
+    h+=`<tr>`;
+    if(isNew)h+=`<td class="mc" rowspan="${rowspans[lastMonth]||1}">${lastMonth}</td>`;
+    h+=`<td class="wc">${week}</td>`;
+    COLS.forEach(c=>{
+      const raw=r[ci[c.key]]||'';
+      if(c.isPct){
+        const n=parseFloat(raw);
+        const ok=!isNaN(n);
+        const cls=!ok?'pct-gray':n>=70?'pct-green':n>=30?'pct-amber':'pct-gray';
+        h+=`<td><span class="${cls}">${ok?Math.round(n)+'%':'–'}</span></td>`;
+      } else {
+        const n=parseFloat(String(raw).replace(/[^0-9.]/g,''));
+        const zero=isNaN(n)||n===0;
+        const txt=isNaN(n)?'–':String(Math.round(n));
+        const barPct=listN>0&&!zero?Math.min(Math.round(n/listN*100),100):0;
+        h+=`<td class="${zero?'val-zero':''}"><div class="cell-inner"><span>${txt}</span>`;
+        if(barPct>0)h+=`<div class="mini-bar"><div class="mini-bar-fill" style="width:${barPct}%;background:${c.color}"></div></div>`;
+        h+=`</div></td>`;
+      }
+    });
+    h+=`</tr>`;
+  });
+  return h+`</tbody></table></div></div>`;
+}
+
+function setSyncStatus(ok){
+  document.getElementById('dot').className='status-dot'+(ok?'':' off');
+  document.getElementById('sync-txt').textContent=ok?'연결됨':'연결 중...';
+}
+
+async function loadCountry(key){
+  const el=document.getElementById(key+'-content');
+  let text=null;
+  const proxies=[u=>u,u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,u=>`https://corsproxy.io/?${encodeURIComponent(u)}`];
+  for(const p of proxies){
+    try{
+      const res=await fetch(p(URLS[key]),{cache:'no-store'});
+      if(res.ok){const t=await res.text();if(t&&t.length>20&&!t.trim().startsWith('<')){text=t;break;}}
+    }catch(e){}
+  }
+  if(!text){
+    el.innerHTML=`<div class="error-box"><b>시트를 불러오지 못했어요</b><br>구글 시트 → 파일 → <b>웹에 게시</b> → <b>게시</b> 버튼 클릭 후 SYNC 눌러주세요.</div>`;
+    setSyncStatus(false);return;
+  }
+  setSyncStatus(true);
+  const allRows=parseCSV(text);
+  const label1=key==='au'?'호주 거래처별 시딩 수량':'인도네시아 캠페인별 시딩 수량';
+  const label2=key==='au'?'AU Australia Unpaid Seeding Status 2026':'ID Indonesia Unpaid Seeding Status 2026';
+  const summary=renderSummary(allRows);
+  const pipeline=renderPipeline(allRows);
+  let html='';
+  if(summary)html+=`<div class="section-title">${label1}</div>`+summary;
+  if(pipeline){if(summary)html+=`<div class="divider"></div>`;html+=`<div class="section-title">${label2}</div>`+pipeline;}
+  if(!html)html=`<div class="error-box">데이터를 파싱하지 못했어요.</div>`;
+  el.innerHTML=html;
+}
+
+function loadAll(){
+  setSyncStatus(false);
+  ['au','id'].forEach(k=>{
+    document.getElementById(k+'-content').innerHTML=`<div class="loading-state"><span class="spinner"></span>불러오는 중...</div>`;
+    loadCountry(k);
+  });
+}
+loadAll();
+</script>
+</body>
+</html>

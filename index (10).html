@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인플루언서 시딩 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#ffffff; --surface:#f8f8f8; --surface2:#f0f0f0;
+  --border:#d5d5d5; --accent:#00d98e; --accent2:#ff6b35;
+  --accent3:#2b7de9; --accent4:#f5b800;
+  --text:#1a1a1a; --muted:#666666;
+  --danger:#e74c3c; --success:#00d98e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── 헤더 ── */
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;
+  background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--accent)}
+.logo span{color:var(--text)}
+.header-right{display:flex;align-items:center;gap:12px}
+.live-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,217,142,.1);
+  color:var(--accent);font-size:10px;font-weight:700;letter-spacing:1.5px;
+  padding:4px 12px;border-radius:20px;border:1px solid rgba(0,217,142,.3);cursor:pointer}
+.live-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
+.live-badge.loading::before{background:var(--accent4);animation:spin .8s linear infinite}
+.live-badge.error::before{background:var(--danger);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sync-btn{font-size:12px;padding:7px 16px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--muted);cursor:pointer;font-weight:600;transition:all .2s}
+.sync-btn:hover{background:var(--accent);border-color:var(--accent);color:#000}
+
+/* ── GAS 배너 ── */
+#setup-banner{background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.3);
+  border-radius:10px;padding:14px 20px;margin:20px 32px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#setup-banner.hidden{display:none}
+.setup-label{font-size:12px;color:var(--accent4);font-weight:700;white-space:nowrap}
+#gas-url-input{flex:1;min-width:280px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:7px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;
+  color:var(--text);outline:none}
+#gas-url-input:focus{border-color:var(--accent4)}
+.btn{border:none;border-radius:8px;padding:8px 18px;font-weight:700;font-size:12px;
+  cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{background:#00c584}
+.btn-secondary{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.btn-secondary:hover{color:var(--text)}
+
+/* ── 레이아웃 ── */
+.container{max-width:1500px;margin:0 auto;padding:24px 32px}
+
+/* ── 탭 ── */
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);
+  padding:4px;border-radius:10px;width:fit-content}
+.tab{padding:8px 20px;border-radius:7px;border:none;cursor:pointer;
+  font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:500;
+  color:var(--muted);background:transparent;transition:all .2s}
+.tab.active{background:var(--accent);color:#000;font-weight:700}
+.tab:hover:not(.active){color:var(--text);background:var(--border)}
+.pane{display:none}.pane.active{display:block}
+
+/* ── section title ── */
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:3px;
+  color:var(--muted);text-transform:uppercase;margin:32px 0 14px;
+  display:flex;align-items:center;gap:10px}
+.section-title:first-child{margin-top:0}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.divider{height:2px;background:var(--border);margin:40px 0;border-radius:1px}
+
+/* ── KPI 카드 ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-color,var(--accent))}
+.kpi-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:7px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:5px}
+.kpi-badge{display:inline-flex;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:5px;font-family:'JetBrains Mono',monospace}
+.badge-up{background:rgba(0,217,142,.15);color:#00b06a}
+.badge-down{background:rgba(231,76,60,.15);color:#e74c3c}
+.badge-blue{background:rgba(43,125,233,.15);color:#2b7de9}
+.badge-yellow{background:rgba(245,184,0,.15);color:#d4940e}
+
+/* ── 차트 카드 ── */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px}
+.card-title{font-size:13px;font-weight:700;margin-bottom:3px;color:var(--text)}
+.card-sub{font-size:11px;color:var(--muted);margin-bottom:14px}
+.chart-wrap.h240{height:240px}
+.chart-wrap.h260{height:260px}
+
+/* ── data-table ── */
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+  padding:8px 10px;border-bottom:2px solid var(--border);text-align:left;font-weight:600;white-space:nowrap}
+.data-table td{padding:9px 10px;border-bottom:1px solid #efefef;white-space:nowrap;color:var(--text)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#fafafa}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.b-green{background:rgba(0,217,142,.15);color:#00b06a}
+.b-red{background:rgba(231,76,60,.15);color:#e74c3c}
+.b-blue{background:rgba(43,125,233,.15);color:#2b7de9}
+.b-yellow{background:rgba(245,184,0,.15);color:#d4940e}
+
+/* ── 채널 바 ── */
+.channel-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.channel-row:last-child{border-bottom:none}
+.ch-name{width:110px;font-size:12px;color:var(--muted)}
+.ch-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.ch-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.ch-val{width:80px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px}
+.ch-pct{width:40px;text-align:right;font-size:10px;color:var(--muted)}
+
+/* ── 시딩 테이블 (라이트 버전) ── */
+.seed-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:4px}
+.seed-scroll{overflow-x:auto}
+.seed-card table{width:100%;border-collapse:collapse}
+.seed-card thead th{padding:11px 16px;color:var(--muted);font-weight:600;border-bottom:2px solid var(--border);
+  white-space:nowrap;background:var(--surface2);text-align:center;font-size:12px;letter-spacing:.03em}
+.seed-card thead th:first-child{text-align:left;min-width:220px}
+.seed-card tbody td{padding:11px 16px;border-bottom:1px solid #efefef;color:var(--text);white-space:nowrap;text-align:center;font-size:13px}
+.seed-card tbody td:first-child{text-align:left;color:var(--muted);font-size:12px}
+.seed-card tbody tr:last-child td{border-bottom:none}
+.seed-card tbody tr.total-row td{background:var(--surface2);font-weight:700;color:var(--text);border-top:1px solid var(--border)}
+.seed-card tbody tr.total-row td:first-child{color:var(--accent3)}
+.seed-card tbody tr:hover td{background:#fafafa}
+.val-empty{color:var(--border)!important;font-size:11px!important}
+.val-num{font-weight:500}
+
+.pipe-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.pipe-scroll{overflow-x:auto}
+.pipe-card table{width:100%;border-collapse:collapse}
+.pipe-card thead th{padding:11px 16px;color:var(--muted);font-weight:600;border-bottom:2px solid var(--border);
+  white-space:nowrap;background:var(--surface2);text-align:center;font-size:12px}
+.pipe-card thead th.l{text-align:left}
+.pipe-card tbody td{padding:10px 16px;border-bottom:1px solid #efefef;text-align:center;font-size:13px;color:var(--text)}
+.pipe-card tbody td.mc{text-align:center;vertical-align:middle;font-weight:700;font-size:12px;
+  color:var(--accent3);background:var(--surface2);border-right:1px solid var(--border);min-width:68px}
+.pipe-card tbody td.wc{text-align:left;color:var(--muted);min-width:48px;font-size:12px;border-right:1px solid var(--border)}
+.pipe-card tbody tr:last-child td{border-bottom:none}
+.pipe-card tbody tr:hover td{background:#fafafa}
+.pipe-card tbody tr:hover td.mc{background:var(--surface2)}
+.pct-green{display:inline-block;background:rgba(0,217,142,.15);color:#00b06a;font-weight:700;font-size:12px;padding:2px 10px;border-radius:20px}
+.pct-amber{display:inline-block;background:rgba(245,184,0,.15);color:#d4940e;font-weight:700;font-size:12px;padding:2px 10px;border-radius:20px}
+.pct-gray{color:var(--muted);font-size:12px}
+.val-zero{color:var(--border)}
+.cell-inner{display:flex;flex-direction:column;align-items:center;gap:3px}
+.mini-bar{width:36px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:2px}
+
+.loading-state{text-align:center;padding:48px;color:var(--muted);font-size:13px}
+.spinner-sm{display:inline-block;width:16px;height:16px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+.seed-error{background:rgba(231,76,60,.06);border:1px solid rgba(231,76,60,.2);border-radius:10px;
+  padding:20px 24px;color:#c0392b;font-size:13px;line-height:2}
+.seed-error b{color:var(--text)}
+
+@media(max-width:768px){
+  .charts-grid{grid-template-columns:1fr}
+  .container,header{padding-left:16px;padding-right:16px}
+  #setup-banner{margin-left:16px;margin-right:16px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center">
+        <span style="font-size:18px">🌱</span>
+      </div>
+      <div>
+        <div class="logo">SEEDING <span>DASHBOARD</span></div>
+        <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">성분에디터 · FY 2025–2026</div>
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div id="gas-status" class="live-badge loading">SYNCING...</div>
+    <button class="sync-btn" onclick="loadAll()">↻ 새로고침</button>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-align:right;line-height:1.8">
+      <div id="last-updated">-</div>
+      <div id="seeding-status">시딩 데이터 로딩 중...</div>
+    </div>
+  </div>
+</header>
+
+<!-- GAS 배너 -->
+<div id="setup-banner">
+  <span class="setup-label">⚙️ APAC Sales 연동</span>
+  <input id="gas-url-input" type="text" placeholder="https://script.google.com/macros/s/XXXX/exec">
+  <button class="btn btn-primary" onclick="saveAndLoad()">연결 &amp; 동기화</button>
+  <button class="btn btn-secondary" onclick="dismissBanner()">나중에</button>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('au',this)">🇦🇺 호주</button>
+    <button class="tab" onclick="showTab('id',this)">🇮🇩 인도네시아</button>
+  </div>
+
+  <!-- ════ 호주 탭 ════ -->
+  <div id="pane-au" class="pane active">
+
+    <!-- SALES 섹션 -->
+    <div class="section-title">🇦🇺 호주 &amp; 🇳🇿 뉴질랜드 — Sales Performance</div>
+    <div class="kpi-grid" id="kpi-au"></div>
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">거래처별 셀인 YTD</div>
+        <div class="card-sub">브랜드/거래처별 (억원)</div>
+        <div class="chart-wrap h240"><canvas id="chart-au-client"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">거래처별 공헌이익율</div>
+        <div class="card-sub">Contributing Margin %</div>
+        <div class="chart-wrap h240"><canvas id="chart-au-margin"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <table class="data-table">
+        <thead><tr>
+          <th>거래처</th><th>브랜드</th><th>셀인 YTD</th><th>원가</th>
+          <th>원가율</th><th>FOC율(공급가)</th><th>공헌이익율</th><th>상태</th>
+        </tr></thead>
+        <tbody id="au-sales-table"></tbody>
+      </table>
+    </div>
+
+    <!-- 구분선 -->
+    <div class="divider"></div>
+
+    <!-- 시딩 섹션 -->
+    <div class="section-title">🇦🇺 AU Australia — Unpaid Seeding 2026</div>
+    <div id="au-seeding-content"><div class="loading-state"><span class="spinner-sm"></span>시딩 데이터 불러오는 중...</div></div>
+  </div>
+
+  <!-- ════ 인도네시아 탭 ════ -->
+  <div id="pane-id" class="pane">
+
+    <!-- SALES 섹션 -->
+    <div class="section-title">🇮🇩 인도네시아 — Sales Performance</div>
+    <div class="kpi-grid" id="kpi-id"></div>
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">월별 셀인 추이</div>
+        <div class="card-sub">2026 Plan vs Actual (백만원)</div>
+        <div class="chart-wrap h240"><canvas id="chart-id-sellin"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">셀아웃 채널 Mix</div>
+        <div class="card-sub">2026 YTD 채널별 비중</div>
+        <div class="chart-wrap h240"><canvas id="chart-id-channel"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:10px">채널별 셀아웃 상세</div>
+      <div id="id-channel-bars"></div>
+    </div>
+
+    <!-- 구분선 -->
+    <div class="divider"></div>
+
+    <!-- 시딩 섹션 -->
+    <div class="section-title">🇮🇩 ID Indonesia — Unpaid Seeding 2026</div>
+    <div id="id-seeding-content"><div class="loading-state"><span class="spinner-sm"></span>시딩 데이터 불러오는 중...</div></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   탭 전환
+══════════════════════════════════════════ */
+function showTab(key, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pane-'+key).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(DB) setTimeout(()=>{ key==='au'?renderAustralia(DB):renderIndonesia(DB); }, 50);
+}
+
+/* ══════════════════════════════════════════
+   APAC Sales — GAS 연동
+══════════════════════════════════════════ */
+let GAS_URL = localStorage.getItem('apac_gas_url') || '';
+let DB = null;
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const charts = {};
+
+Chart.defaults.color = '#666666';
+Chart.defaults.borderColor = '#d5d5d5';
+Chart.defaults.font.family = "'JetBrains Mono','Noto Sans KR',sans-serif";
+Chart.defaults.font.size = 11;
+
+function mc(id, cfg) {
+  if(charts[id]) charts[id].destroy();
+  const el = document.getElementById(id);
+  if(!el) return;
+  charts[id] = new Chart(el.getContext('2d'), cfg);
+}
+
+const fmt = (n, unit='억') => {
+  if(n==null||isNaN(n)) return '-';
+  if(unit==='억') return (n/1e8).toFixed(1)+'억';
+  if(unit==='만') return (n/1e4).toFixed(0)+'만';
+  return n.toLocaleString();
+};
+const pct = n => n==null||isNaN(n)?'-':(n*100).toFixed(1)+'%';
+const mCls = m => m==null?'b-blue':m>0.5?'b-green':m>0?'b-yellow':'b-red';
+const aCls = a => a==null?'b-blue':a>0.8?'b-green':a>0.3?'b-yellow':'b-red';
+
+function buildKpi({label,value,sub,badge,badgeClass='badge-up',color='var(--accent)'}){
+  return `<div class="kpi" style="--kpi-color:${color}">
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-value">${value}</div>
+    ${sub?`<div class="kpi-sub">${sub}</div>`:''}
+    ${badge?`<div class="kpi-badge ${badgeClass}">${badge}</div>`:''}
+  </div>`;
+}
+
+function saveAndLoad(){
+  const url = document.getElementById('gas-url-input').value.trim();
+  if(!url) return alert('Apps Script URL을 입력해 주세요.');
+  GAS_URL = url;
+  localStorage.setItem('apac_gas_url', url);
+  document.getElementById('setup-banner').classList.add('hidden');
+  loadData();
+}
+function dismissBanner(){
+  document.getElementById('setup-banner').classList.add('hidden');
+  DB = getSampleData();
+  renderAll(DB);
+}
+
+function setGasStatus(state){
+  const el = document.getElementById('gas-status');
+  el.className = 'live-badge ' + state;
+  el.textContent = state==='loading'?'SYNCING...':state==='error'?'SALES ERROR':'SALES LIVE ✓';
+}
+
+async function loadData(){
+  if(!GAS_URL){
+    document.getElementById('setup-banner').classList.remove('hidden');
+    DB = getSampleData();
+    renderAll(DB);
+    setGasStatus('error');
+    return;
+  }
+  setGasStatus('loading');
+  try{
+    const url = GAS_URL+(GAS_URL.includes('?')?'&':'?')+'action=all&t='+Date.now();
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error||'오류');
+    DB = json.data;
+    document.getElementById('last-updated').textContent = new Date(DB.lastUpdated).toLocaleString('ko-KR');
+    setGasStatus('live');
+    renderAll(DB);
+  }catch(err){
+    setGasStatus('error');
+    DB = getSampleData();
+    renderAll(DB);
+  }
+}
+setInterval(()=>{ if(GAS_URL) loadData(); }, 10*60*1000);
+
+function renderAll(d){ renderAustralia(d); renderIndonesia(d); }
+
+/* ── 호주 ── */
+function renderAustralia(d){
+  const au = (d.clients||[]).filter(c=>c.country==='호주'||c.country==='뉴질랜드');
+  if(!au.length){ document.getElementById('kpi-au').innerHTML='<div style="color:var(--muted);font-size:13px">호주 데이터 없음</div>'; return; }
+  const auYtd = au.reduce((s,c)=>s+c.ytd,0);
+  const best = au.filter(c=>c.margin!=null).sort((a,b)=>b.margin-a.margin)[0];
+  const worst = au.filter(c=>c.margin!=null).sort((a,b)=>a.margin-b.margin)[0];
+
+  document.getElementById('kpi-au').innerHTML = [
+    buildKpi({label:'호주+NZ 총 셀인 YTD',value:fmt(auYtd),sub:`${au.length}개 거래처 합산`,badge:`${au.filter(c=>c.ytd>0).length}개 활성`,badgeClass:'badge-up',color:'var(--accent)'}),
+    buildKpi({label:'최고 공헌이익율',value:pct(best?.margin),sub:best?.client||'-',badge:'최우수',badgeClass:'badge-up',color:'var(--accent3)'}),
+    buildKpi({label:'주의 거래처',value:worst?.margin<0?worst?.client||'-':'없음',sub:worst?.margin<0?`마진 ${pct(worst?.margin)}`:'모든 거래처 흑자',badge:worst?.margin<0?'⚠ 손실':'정상',badgeClass:worst?.margin<0?'badge-down':'badge-up',color:'var(--accent2)'}),
+    buildKpi({label:'Pharmacoo 공헌이익율',value:pct(au.find(c=>c.client==='Pharmacoo'&&c.brand==='성분에디터')?.margin),sub:'성분에디터 기준',badge:'최상위',badgeClass:'badge-up',color:'var(--accent4)'}),
+  ].join('');
+
+  const auLabels = au.map(c=>`${c.client}(${c.brand.slice(0,3)})`);
+  mc('chart-au-client',{type:'bar',data:{labels:auLabels,datasets:[{
+    label:'셀인 YTD',data:au.map(c=>+(c.ytd/1e8).toFixed(2)),
+    backgroundColor:au.map(c=>c.margin!=null&&c.margin<0?'rgba(231,76,60,.7)':'rgba(0,217,142,.7)'),borderRadius:4
+  }]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{ticks:{color:'#999',font:{size:10}}},y:{ticks:{color:'#999',callback:v=>v+'억'}}}}});
+
+  mc('chart-au-margin',{type:'bar',data:{labels:auLabels,datasets:[{
+    label:'공헌이익율(%)',data:au.map(c=>c.margin!=null?+(c.margin*100).toFixed(1):0),
+    backgroundColor:au.map(c=>c.margin==null?'rgba(43,125,233,.4)':c.margin>0.5?'rgba(0,217,142,.7)':c.margin>0?'rgba(245,184,0,.7)':'rgba(231,76,60,.7)'),borderRadius:4
+  }]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{ticks:{color:'#999',font:{size:10}}},y:{ticks:{color:'#999',callback:v=>v+'%'},min:-20,max:90}}}});
+
+  document.getElementById('au-sales-table').innerHTML = au.map(c=>`<tr>
+    <td>${c.country==='뉴질랜드'?'🇳🇿':'🇦🇺'} ${c.client}</td><td>${c.brand}</td>
+    <td style="font-family:'JetBrains Mono',monospace">${fmt(c.ytd)}</td>
+    <td style="font-family:'JetBrains Mono',monospace;color:var(--muted)">${fmt(c.cogs)}</td>
+    <td><span class="badge b-blue">${pct(c.cogsRate)}</span></td>
+    <td><span class="badge ${c.focRateSupply>0.2?'b-red':'b-yellow'}">${pct(c.focRateSupply)}</span></td>
+    <td><span class="badge ${mCls(c.margin)}">${pct(c.margin)}</span></td>
+    <td><span class="badge ${c.margin!=null&&c.margin<0?'b-red':c.ytd>0?'b-green':'b-yellow'}">${c.margin!=null&&c.margin<0?'⚠ 손실':c.ytd>0?'활성':'대기'}</span></td>
+  </tr>`).join('');
+}
+
+/* ── 인도네시아 ── */
+function renderIndonesia(d){
+  const indo = (d.clients||[]).find(c=>c.country==='인도네시아'&&c.brand==='성분에디터')||{};
+  const so = d.indoSellOut||{};
+  const soTotal = Object.values(so.channels||{}).reduce((s,arr)=>s+arr.reduce((a,b)=>a+b,0),0);
+  const plan   = d.countrySellIn?.['인도네시아']?.plan?.['성분에디터_Sociolla']   || Array(12).fill(0);
+  const actual = d.countrySellIn?.['인도네시아']?.actual?.['성분에디터_Sociolla'] || Array(12).fill(0);
+  const chTotals={};
+  for(const [k,arr] of Object.entries(so.channels||{})) chTotals[k]=arr.reduce((a,b)=>a+b,0);
+  const allCh = Object.values(chTotals).reduce((a,b)=>a+b,0);
+  const chColors={Online:'#2b7de9',Marketplace:'#f5b800',Offline:'#00d98e'};
+
+  document.getElementById('kpi-id').innerHTML = [
+    buildKpi({label:'셀인 YTD (성분에디터)',value:fmt(indo.ytd||0),sub:`Target: ${fmt(indo.target||0)}`,badge:`${pct(indo.achievement)} 달성`,badgeClass:aCls(indo.achievement),color:'var(--accent)'}),
+    buildKpi({label:'공헌이익율',value:pct(indo.margin),sub:'성분에디터 @ Sociolla',badge:'수익 현황',badgeClass:'badge-up',color:'var(--accent3)'}),
+    buildKpi({label:'셀아웃 YTD',value:fmt(soTotal),sub:'Jan~현재 채널 합산',badge:fmt(soTotal,'억'),badgeClass:'badge-blue',color:'var(--accent2)'}),
+    buildKpi({label:'FOC Rate (공급가)',value:pct(indo.focRateSupply),sub:'성분에디터 @ Sociolla',badge:'정상 범위',badgeClass:'badge-yellow',color:'var(--accent4)'}),
+  ].join('');
+
+  mc('chart-id-sellin',{type:'bar',data:{labels:MONTHS,datasets:[
+    {label:'Plan',data:plan.map(v=>+(v/1e6).toFixed(1)),backgroundColor:'rgba(43,125,233,.2)',borderRadius:3},
+    {label:'Actual',data:actual.map(v=>+(v/1e6).toFixed(1)),backgroundColor:'rgba(0,217,142,.75)',borderRadius:3}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#666'}}},
+    scales:{x:{ticks:{color:'#999'}},y:{ticks:{color:'#999',callback:v=>v+'백만'}}}}});
+
+  mc('chart-id-channel',{type:'doughnut',data:{
+    labels:Object.keys(chTotals),
+    datasets:[{data:Object.values(chTotals).map(v=>+(v/1e4).toFixed(0)),
+      backgroundColor:['rgba(43,125,233,.8)','rgba(245,184,0,.8)','rgba(0,217,142,.8)'],borderWidth:0}]
+  },options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+    plugins:{legend:{position:'bottom',labels:{color:'#666',padding:12}}}}});
+
+  document.getElementById('id-channel-bars').innerHTML = Object.entries(chTotals).map(([name,val])=>{
+    const p = allCh>0?(val/allCh*100).toFixed(1):0;
+    return `<div class="channel-row">
+      <div class="ch-name">${name}</div>
+      <div class="ch-bar"><div class="ch-fill" style="width:${p}%;background:${chColors[name]||'#888'}"></div></div>
+      <div class="ch-val">${(val/1e4).toLocaleString()}만</div>
+      <div class="ch-pct">${p}%</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── 샘플 데이터 ── */
+function getSampleData(){
+  return {
+    clients:[
+      {country:'인도네시아',client:'Sociolla',brand:'성분에디터',ytd:239497938,target:1292835080,cogs:150239052,profit:54940000,margin:0.2294,cogsRate:0.628,focRateSupply:0.0606,achievement:0.185},
+      {country:'호주',client:'RNG Global',brand:'성분에디터',ytd:119120640,target:583975680,cogs:44276334,profit:69888980,margin:0.5867,cogsRate:0.3717,focRateSupply:0.0791,achievement:0.204},
+      {country:'호주',client:'Boniik',brand:'성분에디터',ytd:15592000,target:105592000,cogs:6224340,profit:9367660,margin:0.6008,cogsRate:0.3992,focRateSupply:0,achievement:0.148},
+      {country:'호주',client:'W Supply',brand:'성분에디터',ytd:89486400,target:507862400,cogs:28905410,profit:-6931114,margin:-0.0775,cogsRate:0.3230,focRateSupply:0.3707,achievement:0.176},
+      {country:'호주',client:'Pharmacoo',brand:'성분에디터',ytd:44771085,target:40000000,cogs:13135596,profit:30336411,margin:0.6776,cogsRate:0.2934,focRateSupply:0.07,achievement:1.119},
+      {country:'호주',client:'Pharmacoo',brand:'밀크터치',ytd:119216096,target:206008076,cogs:36137977,profit:79968966,margin:0.6708,cogsRate:0.3031,focRateSupply:0.1605,achievement:0.579},
+      {country:'호주',client:'Pharmacoo',brand:'마미케어',ytd:15333200,target:0,cogs:3647700,profit:5658765,margin:0.3691,cogsRate:0.2379,focRateSupply:0.358,achievement:null},
+      {country:'뉴질랜드',client:'W Supply NZ',brand:'성분에디터',ytd:5804400,target:65788000,cogs:2002920,profit:3147304,margin:0.5422,cogsRate:0.3451,focRateSupply:0.2398,achievement:0.088},
+    ],
+    indoSellOut:{channels:{
+      'Online':[21254210,16910460,12946170,11073710,0,0,0,0,0,0,0,0],
+      'Marketplace':[8999600,7395490,21118470,14587920,0,0,0,0,0,0,0,0],
+      'Offline':[80134220,29788850,102777960,71701600,0,0,0,0,0,0,0,0],
+    }},
+    countrySellIn:{'인도네시아':{
+      actual:{'성분에디터_Sociolla':[0,22835080,216662858,0,0,0,0,0,0,0,0,0]},
+      plan:{'성분에디터_Sociolla':[0,22835080,210000000,20000000,80000000,20000000,200000000,80000000,80000000,300000000,80000000,200000000]}
+    }},
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+/* ══════════════════════════════════════════
+   시딩 대시보드 — CSV 파싱
+══════════════════════════════════════════ */
+const SEEDING_URLS = {
+  au:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQhVfiw_TTXB0APbhaC-iJJGO76ovqb8hYSzT2O7aHnab8PnBpwZUKwhY0r5HGKIA/pub?gid=413156464&single=true&output=csv',
+  id:'https://docs.google.com/spreadsheets/d/e/2PACX-1vSe1JZ06WjgHm-PGm6RSSvKcHY2TP05B33hkB-Q7m8Z2eoVfoEWAyiYddj5DLifOOmZxdpwYNH4569P/pub?gid=972980346&single=true&output=csv'
+};
+
+function parseCSV(text){
+  return text.trim().split('\n').map(line=>{
+    const cells=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      if(line[i]==='"'){inQ=!inQ;}
+      else if(line[i]===','&&!inQ){cells.push(cur.trim());cur='';}
+      else cur+=line[i];
+    }
+    cells.push(cur.trim()); return cells;
+  });
+}
+function isEmpty(r){return!r||r.every(c=>!c||c.trim()==='');}
+function findYearIdx(rows){return rows.findIndex(r=>r.some(c=>/(2025-2026|2025–2026)/i.test(c||'')));}
+function findPipeIdx(rows){return rows.findIndex(r=>r.some(c=>/^month$/i.test((c||'').trim())));}
+
+function renderSummary(rows){
+  const hIdx=findYearIdx(rows); if(hIdx<0)return '';
+  const headerRow=rows[hIdx];
+  const startCol=headerRow.findIndex(c=>/(2025-2026|2025–2026)/i.test(c||''));
+  const head=[...headerRow.slice(startCol)];
+  if(!head[0]||head[0].trim()==='')head[0]='캠페인';
+  const pipeIdx=findPipeIdx(rows);
+  const endIdx=pipeIdx>hIdx?pipeIdx:rows.length;
+  const body=rows.slice(hIdx+1,endIdx).filter(r=>!isEmpty(r));
+  let h=`<div class="seed-card"><div class="seed-scroll"><table><thead><tr>`;
+  head.forEach(c=>h+=`<th>${c||''}</th>`);
+  h+=`</tr></thead><tbody>`;
+  body.forEach(r=>{
+    const sliced=r.slice(startCol);
+    const name=(sliced[0]||'').trim();
+    if(!name||/^\d+$/.test(name))return;
+    const isTotal=/(total|전체|합계)/i.test(name);
+    h+=`<tr class="${isTotal?'total-row':''}">`;
+    sliced.forEach((c,i)=>{
+      const empty=!c||c.trim()===''||c.trim()==='0';
+      const hasNum=!empty&&i>0&&!isNaN(parseFloat(c));
+      h+=`<td class="${i>0&&empty?'val-empty':''}${hasNum?' val-num':''}">${(!c||c.trim()==='')?'–':c}</td>`;
+    });
+    h+=`</tr>`;
+  });
+  return h+`</tbody></table></div></div>`;
+}
+
+function renderPipeline(rows){
+  const hIdx=findPipeIdx(rows); if(hIdx<0)return '';
+  const monthCol=rows[hIdx].findIndex(c=>/^month$/i.test((c||'').trim()));
+  const weekCol=rows[hIdx].findIndex(c=>/^week$/i.test((c||'').trim()));
+  const hRow=rows[hIdx];
+  const findAbs=a=>hRow.findIndex(h=>a.some(x=>h.toLowerCase().replace(/\s/g,'')=== x.toLowerCase().replace(/\s/g,'')));
+  const findAbsIn=a=>hRow.findIndex(h=>a.some(x=>h.toLowerCase().includes(x.toLowerCase())));
+  const ci={
+    month:monthCol,week:weekCol,
+    listing:findAbs(['listing']),contact:findAbs(['contact']),
+    response:findAbs(['response']),pending:findAbsIn(['pending']),
+    delivered:findAbsIn(['deliver']),upload:findAbsIn(['upload']),
+    respRate:findAbsIn(['response rate']),accRate:findAbsIn(['acceptance','accept']),
+  };
+  if(ci.response===ci.respRate)ci.response=-1;
+  const COLS=[
+    {key:'listing',label:'리스팅',color:'#2b7de9'},
+    {key:'contact',label:'컨택',color:'#00d98e'},
+    {key:'response',label:'배송 대기',color:'#f5b800'},
+    {key:'pending',label:'Pending',color:'#f5b800'},
+    {key:'delivered',label:'배송완료',color:'#00d98e'},
+    {key:'upload',label:'업로드',color:'#2b7de9'},
+    {key:'respRate',label:'응답률',isPct:true},
+    {key:'accRate',label:'수락률',isPct:true},
+  ].filter(c=>ci[c.key]>-1);
+  const parsed=[];let lastMonth='';
+  rows.slice(hIdx+1).forEach(r=>{
+    if(isEmpty(r))return;
+    const month=(r[monthCol]||'').trim(),week=(r[weekCol]||'').trim();
+    if(!week&&!month)return;
+    if(month)lastMonth=month;
+    parsed.push({week,lastMonth,r});
+  });
+  const rowspans={};
+  parsed.forEach(({lastMonth})=>{rowspans[lastMonth]=(rowspans[lastMonth]||0)+1;});
+  const monthRendered={};
+  let h=`<div class="pipe-card"><div class="pipe-scroll"><table><thead><tr>`;
+  h+=`<th class="l" style="min-width:68px">Month</th><th class="l" style="min-width:48px">Week</th>`;
+  COLS.forEach(c=>h+=`<th>${c.label}</th>`);
+  h+=`</tr></thead><tbody>`;
+  parsed.forEach(({week,lastMonth,r})=>{
+    const isNew=!monthRendered[lastMonth];
+    if(isNew)monthRendered[lastMonth]=true;
+    const listN=ci.listing>-1?parseFloat(String(r[ci.listing]||'0').replace(/[^0-9.]/g,''))||0:0;
+    h+=`<tr>`;
+    if(isNew)h+=`<td class="mc" rowspan="${rowspans[lastMonth]||1}">${lastMonth}</td>`;
+    h+=`<td class="wc">${week}</td>`;
+    COLS.forEach(c=>{
+      const raw=r[ci[c.key]]||'';
+      if(c.isPct){
+        const n=parseFloat(raw);const ok=!isNaN(n);
+        const cls=!ok?'pct-gray':n>=70?'pct-green':n>=30?'pct-amber':'pct-gray';
+        h+=`<td><span class="${cls}">${ok?Math.round(n)+'%':'–'}</span></td>`;
+      } else {
+        const n=parseFloat(String(raw).replace(/[^0-9.]/g,''));
+        const zero=isNaN(n)||n===0;const txt=isNaN(n)?'–':String(Math.round(n));
+        const barPct=listN>0&&!zero?Math.min(Math.round(n/listN*100),100):0;
+        h+=`<td class="${zero?'val-zero':''}"><div class="cell-inner"><span>${txt}</span>`;
+        if(barPct>0)h+=`<div class="mini-bar"><div class="mini-bar-fill" style="width:${barPct}%;background:${c.color}"></div></div>`;
+        h+=`</div></td>`;
+      }
+    });
+    h+=`</tr>`;
+  });
+  return h+`</tbody></table></div></div>`;
+}
+
+async function loadSeeding(key){
+  const el = document.getElementById(key+'-seeding-content');
+  let text=null;
+  const proxies=[u=>u,u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,u=>`https://corsproxy.io/?${encodeURIComponent(u)}`];
+  for(const p of proxies){
+    try{
+      const res=await fetch(p(SEEDING_URLS[key]),{cache:'no-store'});
+      if(res.ok){const t=await res.text();if(t&&t.length>20&&!t.trim().startsWith('<')){text=t;break;}}
+    }catch(e){}
+  }
+  if(!text){
+    el.innerHTML=`<div class="seed-error"><b>시딩 시트를 불러오지 못했어요</b><br>구글 시트 → 파일 → <b>웹에 게시</b> → 게시 후 새로고침해 주세요.</div>`;
+    document.getElementById('seeding-status').textContent='시딩 연결 실패';
+    return;
+  }
+  document.getElementById('seeding-status').textContent='시딩 연결됨';
+  const rows=parseCSV(text);
+  const summary=renderSummary(rows);
+  const pipeline=renderPipeline(rows);
+  let html='';
+  if(summary) html+=`<div class="section-title" style="margin-top:0">거래처별 시딩 수량</div>`+summary;
+  if(pipeline){ if(summary)html+=`<div style="height:20px"></div>`; html+=`<div class="section-title" style="margin-top:0">파이프라인 현황</div>`+pipeline; }
+  if(!html) html=`<div class="seed-error">데이터를 파싱하지 못했어요.</div>`;
+  el.innerHTML=html;
+}
+
+/* ── 초기화 ── */
+function loadAll(){
+  loadData();
+  ['au','id'].forEach(k=>{
+    document.getElementById(k+'-seeding-content').innerHTML=`<div class="loading-state"><span class="spinner-sm"></span>불러오는 중...</div>`;
+    loadSeeding(k);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  if(GAS_URL){
+    document.getElementById('gas-url-input').value = GAS_URL;
+    document.getElementById('setup-banner').classList.add('hidden');
+  }
+  loadAll();
+});
+</script>
+</body>
+</html>
